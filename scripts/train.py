@@ -49,6 +49,7 @@ from nerfstudio.configs.config_utils import convert_markup_to_ansi
 from nerfstudio.configs.method_configs import AnnotatedBaseConfigUnion
 from nerfstudio.engine.trainer import TrainerConfig
 from nerfstudio.utils import comms, profiler
+from pathlib import Path
 
 CONSOLE = Console(width=120)
 DEFAULT_TIMEOUT = timedelta(minutes=30)
@@ -216,6 +217,12 @@ def launch(
 
 def main(config: TrainerConfig) -> None:
     """Main function."""
+    config.pipeline.datamanager.dataparser.scene_scale = 6.0
+    config.pipeline.datamanager.dataparser.data = Path('/data/hyzhou/data/kitti/kitti360_nerfacto')
+    # config.pipeline.datamanager.dataparser.train_split_fraction = 0.8
+    config.pipeline.model.near_plane = 0.0
+    config.pipeline.model.far_plane = 6.0
+    config.pipeline.model.collider_params = {'near_plane': 0.0, 'far_plane': 6.0}
 
     config.set_timestamp()
     if config.data:

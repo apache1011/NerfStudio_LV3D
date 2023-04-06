@@ -35,13 +35,15 @@ from nerfstudio.utils.io import load_from_json
 
 
 @dataclass
-class BlenderDataParserConfig(DataParserConfig):
+class KittiDataParserConfig(DataParserConfig):
     """Blender dataset parser config"""
 
-    _target: Type = field(default_factory=lambda: Blender)
+    _target: Type = field(default_factory=lambda: Kitti)
     """target class to instantiate"""
     data: Path = Path("data/blender/lego")
     """Directory specifying location of data."""
+    calib: Path = Path("/data/datasets/KITTI-360/calibration/perspective.txt")
+    """Camera Intrinsics"""
     scale_factor: float = 1.0
     """How much to scale the camera origins by."""
     alpha_color: str = "white"
@@ -49,16 +51,17 @@ class BlenderDataParserConfig(DataParserConfig):
 
 
 @dataclass
-class Blender(DataParser):
+class Kitti(DataParser):
     """Blender Dataset
     Some of this code comes from https://github.com/yenchenlin/nerf-pytorch/blob/master/load_blender.py#L37.
     """
 
-    config: BlenderDataParserConfig
+    config: KittiDataParserConfig
 
-    def __init__(self, config: BlenderDataParserConfig):
+    def __init__(self, config: KittiDataParserConfig):
         super().__init__(config=config)
         self.data: Path = config.data
+        self.calib: Path = config.calib
         self.scale_factor: float = config.scale_factor
         self.alpha_color = config.alpha_color
 
@@ -71,30 +74,43 @@ class Blender(DataParser):
         meta = load_from_json(self.data / f"transforms_{split}.json")
         image_filenames = []
         poses = []
-        for frame in meta["frames"]:
-            fname = self.data / Path(frame["file_path"].replace("./", "") + ".png")
+        for frame in meta:
+            fname = frame['image_path']
             image_filenames.append(fname)
-            poses.append(np.array(frame["transform_matrix"]))
+            poses.append(np.array(frame["c2w"]).reshape(4, 4))
         poses = np.array(poses).astype(np.float32)
 
-        img_0 = imageio.imread(image_filenames[0])
-        image_height, image_width = img_0.shape[:2]
-        camera_angle_x = float(meta["camera_angle_x"])
-        focal_length = 0.5 * image_width / np.tan(0.5 * camera_angle_x)
+        bbox = np.array(meta[0]['car_bbox']['vertices'])
+        R = np.array(meta[0]['car_bbox']['R'])
+        T = np.array(meta[0]['car_bbox']['T'])
+        box_norm = np.linalg.norm(R, axis=1)
+        bbox = bbox * box_norm
+        # data_transform = np.concatenate((R, T[None, :].T), axis=1)
+        bbox_min = (np.min(bbox, axis=0) * 1.2).tolist()
+        bbox_max = (np.max(bbox, axis=0) * 1.2).tolist()
 
-        cx = image_width / 2.0
-        cy = image_height / 2.0
+        Intrinsic = None
+        with open(self.calib, 'r') as rf:
+            for line in rf:
+                if line.startswith('P_rect_00'):
+                    Intrinsic = list(map(float, line.strip().split(' ')[1:]))
+                    Intrinsic = np.array(Intrinsic).reshape(3, 4)
+
+        focal_length_x = Intrinsic[0][0]
+        focal_length_y = Intrinsic[1][1]
+
+        cx = Intrinsic[0][2]
+        cy = Intrinsic[1][2]
         camera_to_world = torch.from_numpy(poses[:, :3])  # camera to world transform
 
         # in x,y,z order
         camera_to_world[..., 3] *= self.scale_factor
-        # scene_box = SceneBox(aabb=torch.tensor([[-1.5, -1.5, -1.5], [1.5, 1.5, 1.5]], dtype=torch.float32))
-        scene_box = SceneBox(aabb=torch.tensor([[-2, -2, -2], [2, 2, 2]], dtype=torch.float32))
+        scene_box = SceneBox(aabb=torch.tensor([bbox_min, bbox_max], dtype=torch.float32))
 
         cameras = Cameras(
             camera_to_worlds=camera_to_world,
-            fx=focal_length,
-            fy=focal_length,
+            fx=focal_length_x,
+            fy=focal_length_y,
             cx=cx,
             cy=cy,
             camera_type=CameraType.PERSPECTIVE,
