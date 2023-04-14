@@ -53,7 +53,7 @@ class SDFStudioDataParserConfig(DataParserConfig):
     Sets the bounding cube to have edge length of this size.
     The longest dimension of the Friends axis-aligned bbox will be scaled to this value.
     """
-    skip_every_for_val_split: int = 1
+    skip_every_for_val_split: int = 10
     """sub sampling validation images"""
     auto_orient: bool = False
 

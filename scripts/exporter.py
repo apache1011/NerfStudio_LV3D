@@ -59,9 +59,9 @@ class ExportPointCloud(Exporter):
     """Name of the RGB output."""
     use_bounding_box: bool = True
     """Only query points within the bounding box"""
-    bounding_box_min: Tuple[float, float, float] = (-1, -1, -1)
+    bounding_box_min: Tuple[float, float, float] = (-6, -6, -6)
     """Minimum of the bounding box, used if use_bounding_box is True."""
-    bounding_box_max: Tuple[float, float, float] = (1, 1, 1)
+    bounding_box_max: Tuple[float, float, float] = (6, 6, 6)
     """Maximum of the bounding box, used if use_bounding_box is True."""
     num_rays_per_batch: int = 32768
     """Number of rays to evaluate per batch. Decrease if you run out of memory."""
@@ -184,7 +184,7 @@ class ExportPoissonMesh(Exporter):
     Export a mesh using poisson surface reconstruction.
     """
 
-    num_points: int = 1000000
+    num_points: int = 5000000
     """Number of points to generate. May result in less if outlier removal is used."""
     remove_outliers: bool = True
     """Remove outliers from the point cloud."""
@@ -200,9 +200,9 @@ class ExportPoissonMesh(Exporter):
     """Whether to save the point cloud."""
     use_bounding_box: bool = True
     """Only query points within the bounding box"""
-    bounding_box_min: Tuple[float, float, float] = (-1, -1, -1)
+    bounding_box_min: Tuple[float, float, float] = (-6, -6, -6)
     """Minimum of the bounding box, used if use_bounding_box is True."""
-    bounding_box_max: Tuple[float, float, float] = (1, 1, 1)
+    bounding_box_max: Tuple[float, float, float] = (6, 6, 6)
     """Minimum of the bounding box, used if use_bounding_box is True."""
     num_rays_per_batch: int = 32768
     """Number of rays to evaluate per batch. Decrease if you run out of memory."""

@@ -218,7 +218,7 @@ def launch(
 def main(config: TrainerConfig) -> None:
     """Main function."""
     config.pipeline.datamanager.dataparser.scene_scale = 6.0
-    config.pipeline.datamanager.dataparser.data = Path('/data/hyzhou/data/kitti/kitti360_nerfacto')
+    # config.pipeline.datamanager.dataparser.data = Path('/data/hyzhou/data/kitti/kitti360_nerfacto')
     # config.pipeline.datamanager.dataparser.train_split_fraction = 0.8
     config.pipeline.model.near_plane = 0.0
     config.pipeline.model.far_plane = 6.0
